@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>South Carolina Winter Weather</title>
+
+  <!-- Bootstrap core CSS -->
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  
+   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+    integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+    crossorigin=""/>
+  
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.20/r-2.2.3/sp-1.0.1/sl-1.3.1/datatables.min.css"/>
+
+</head>
+
+<style>
+	.thumb {
+		height: 25%;
+	}
+	
+	#summary {
+		max-height:450px;
+		overflow:scroll;
+	}
+	
+	#map { height:450px; width:100%; }
+	
+	#map-btns {
+		z-index: 10000;
+		position:absolute;
+		top:10px;
+		right:10px;
+	}
+		
+	#type-header {
+		background-color:#3a15ab;
+		color:white;
+		padding: 5px;
+		margin:0 -5px 0px -5px;
+	}
+	
+	#dates {
+		background-color:#6560bf;
+		color:white;
+		padding: 5px;
+		margin:0 -5px 5px -5px;
+	}
+	.btn-map {
+		background-color:#6560bf;
+		color:white;
+	}
+	.btn-map:hover{
+		color:#ddd;
+	}
+	.btn-map:not(:disabled):not(.disabled).active, .btn-map:not(:disabled):not(.disabled):active, .show>.btn-map.dropdown-toggle{
+		background-color:#3a15ab;
+	}
+	.form-check-inline {
+		width: 40%;
+	}
+	.filter-div {
+		height:280px;
+	}
+	.div-bottom{
+		position:absolute;
+		bottom: 3px;
+	}
+	
+	.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+		color:#3a15ab;
+	}
+
+	.nav-item a {
+		color:#6560bf;
+		font-weight:bold;
+	}
+
+	table.dataTable tbody>tr.selected, table.dataTable tbody>tr>.selected {
+		background-color:#6560bf;
+		color:white;
+	}
+	h2 {color: #3a15ab}
+	.navbar{background-color:#3a15ab}
+	
+	.label {
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: -1em;
+  }
+
+  .label div {
+    position: relative;
+    left: 50%;
+    top: -50%;
+    text-shadow: 0px 2px 1px rgba(255,255,255,0.85);
+	z-index:10000;
+  }
+	
+</style>
+
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark static-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">South Carolina State Climate Office</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarResponsive">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="#">Home
+              <span class="sr-only">(current)</span>
+            </a>
+          </li>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+
+<div id="container" class="container mb-3 mt-4">
+
+	<h2>South Carolina Winter Weather</h2>
+	<p>Some introductury text about winter weather in South Carolina and where the data are from, and so on and so forth. </p>
+	
+	<ul class="nav nav-tabs" id="main-tabs" role="tablist">
+	  <li class="nav-item">
+		<a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-div" role="tab" aria-controls="map-div" aria-selected="true">Event Summary</a>
+	  </li>
+	  <li class="nav-item">
+		<a class="nav-link" id="filter-tab" data-toggle="tab" href="#filter-div" role="tab" aria-controls="filter-div" aria-selected="false">Filter Events</a>
+	  </li>		  
+	</ul>
+	
+	<div class="tab-content" id="map-row">	
+		<div id="map-div" class="tab-pane fade show active" role="tabpanel" aria-labelledby="map-tab">
+			<div class="row">
+				<div class="col-lg-7 px-0">
+					<div id="map">
+						<div class="btn-group-vertical btn-group-toggle" data-toggle="buttons" id="map-btns">
+						  <label class="btn btn-sm btn-map active">
+							<input type="radio" name="pointLayers" id="min-temp-radio" autocomplete="off" value="t" checked> Min Temperature
+						  </label>
+						  <label class="btn btn-sm btn-map">
+							<input type="radio" name="pointLayers" id="precip-radio" autocomplete="off" value="p"> Precipitation
+						  </label>
+						  <label class="btn btn-sm btn-map">
+							<input type="radio" name="pointLayers" id="snowfall-radio" autocomplete="off" value="s"> Snowfall
+						  </label>
+						</div>
+					</div>
+				</div>	
+				<div id="summary" class="col-lg-5">
+					<h4 id="type-header"><span id="type"></span> Event</h4>
+					<h5 id="dates">Impact Dates</h5>
+					<div class="row">
+						<div class="col-lg-6">
+							<h5>Deaths</h5>
+							<p id="deaths"></p>
+						</div>
+						<div class="col-lg-6">
+							<h5>Injuries</h5>
+							<p id="injuries"></p>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-lg-6">
+							<h5>Property Damange</h5>
+							<p id="property-damage"></p>
+						</div>
+						<div class="col-lg-6">
+							<h5>Crop Damage</h5>
+							<p id="crop-damage"></p>
+						</div>
+					</div>
+					<h5>Event Description</h5>
+					<p id="description"></p>
+				</div>
+			</div>	
+		</div>	
+	
+		<div id="filter-div" class="tab-pane fade mt-4" role="tabpanel" aria-labelledby="filter-tab">
+			<div class="row">
+				<div class="col-lg-4 filter-div" id="type-filter">
+					<h3>Winter Weather Type</h3>
+					<fieldset>
+						
+						<form class="mb-1">
+							<label>Filter by weather impacts.</label>
+							
+							<div role="group" aria-labelledby="cat-label" id="event-type-group" class="form-group pt-2 border-top">
+							
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Snow" id="sn-check">
+								  <label class="form-check-label" for="defaultCheck1">
+									Snow
+								  </label>
+								</div>
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Heavy Snow" id="hs-check" >
+								  <label class="form-check-label" for="defaultCheck2">
+									Heavy Snow
+								  </label>
+								</div>
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Ice" id="ic-check" >
+								  <label class="form-check-label" for="defaultCheck2">
+									Ice
+								  </label>
+								</div>
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Freezing Rain" id="fr-check" >
+								  <label class="form-check-label" for="defaultCheck2">
+									Freezing Rain
+								  </label>
+								</div>
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Freezing Fog" id="ff-check" >
+								  <label class="form-check-label" for="defaultCheck2">
+									Freezing Fog
+								  </label>
+								</div>
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Frost/Freeze" id="frfr-check" >
+								  <label class="form-check-label" for="defaultCheck2">
+									Frost/Freeze
+								  </label>
+								</div>
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Sleet" id="sl-check" >
+								  <label class="form-check-label" for="defaultCheck2">
+									Sleet
+								  </label>
+								</div>
+								<div class="form-check-inline">
+								  <input class="form-check-input" type="checkbox" value="Cold" id="co-check" >
+								  <label class="form-check-label" for="defaultCheck2">
+									Cold
+								  </label>
+								</div>
+							</div>
+							<div class="div-bottom">
+								<p class="small pr-4">When no boxes are selected, no filter is applied. Use the Clear button to unselect all boxes.</p>
+								<button id="clear-type" class="btn btn-sm btn-outline-secondary">Clear</button>
+							</div>	
+						</form>
+					</fieldset>	
+
+				</div>
+					 
+				<div class="col-lg-4" id="county-filter">
+					
+					<h3>County</h3>
+					<label for="exampleFormControlSelect1">Select a Ccunty.</label>
+					
+					<div class="form-group pt-2 border-top">
+						
+						<select class="form-control w-75" id="countySelect">
+							<option>All</option>
+							<option>Abbeville</option>
+							<option>Aiken</option>
+							<option>Allendale</option>
+							<option>Anderson</option>
+							<option>Bamberg</option>
+							<option>Barnwell</option>
+							<option>Beaufort</option>
+							<option>Berkeley</option>
+							<option>Calhoun</option>
+							<option>Charleston</option>
+							<option>Cherokee</option>
+							<option>Chester</option>
+							<option>Chesterfield</option>
+							<option>Clarendon</option>
+							<option>Colleton</option>
+							<option>Darlington</option>
+							<option>Dillon</option>
+							<option>Dorchester</option>
+							<option>Edgefield</option>
+							<option>Fairfield</option>
+							<option>Florence</option>
+							<option>Georgetown</option>
+							<option>Greenville</option>
+							<option>Greenwood</option>
+							<option>Hampton</option>
+							<option>Horry</option>
+							<option>Jasper</option>
+							<option>Kershaw</option>
+							<option>Lancaster</option>
+							<option>Laurens</option>
+							<option>Lee</option>
+							<option>Lexington</option>
+							<option>McCormick</option>
+							<option>Marion</option>
+							<option>Marlboro</option>
+							<option>Newberry</option>
+							<option>Orangeburg</option>
+							<option>Pickens</option>
+							<option>Richland</option>
+							<option>Saluda</option>
+							<option>Spartanburg</option>
+							<option>Sumter</option>
+							<option>Union</option>
+							<option>Williamsburg</option>
+							<option>York</option>
+						</select>
+					</div>
+					<div class="div-bottom">
+						<p class="small pr-4">Choose All or use the Clear button to remove county filter and display events state-wide.</p>
+						<button id="clear-county" class="btn btn-sm btn-outline-secondary">Clear</button>
+					</div>	
+				</div>
+			
+				<div class="col-lg-4" id="year-filter">	
+					<h3>Event Year</h3>
+					<label id="year-label">Filter by range of years.</label>
+					<div role="group" aria-labelledby="year-label" id="event-years" class="pt-2 border-top">
+						<fieldset>
+							<legend class="sr-only">Filter events by range of years:</legend>
+							<form class="form-inline mb-1">
+								<div class="form-group m-1">
+									<label for="startyear" class="mr-2">Start Year</label>
+									<input type="number" class="form-control" id="startyear" min="1996" max="2020" maxlength="4" size="4" value="1996" title="Start year for filtering by range of years.">
+								</div>
+								<div class="form-group m-1">
+									<label for="endyear" class="mr-3">End Year</label>
+									<input type="number" class="form-control" id="endyear" min="1996" max="2020" maxlength="4" size="4" value="2020" title="End year for filtering by range of years.">
+								</div>
+							</form>
+						</fieldset>
+					</div>
+					<div class="div-bottom">
+						<p class="small pr-4">Use the Clear button to set the date range back to the default.</p>
+						<button id="clear-year" class="btn btn-sm btn-outline-secondary">Clear</button>
+					</div>	
+				</div>
+			</div>
+			
+		</div> 
+	</div>	
+		
+    <div class="row mt-4" id="rt-row">
+		<h3>Winter Weather Events</h3>
+		<div id="table-div" class="mt-3">
+			<table class="table table-striped" id="events-table">
+				<thead>
+					<tr>
+						<th>Event Type</th>
+						<th>Impact Date</th>
+						<th class="tabledesc">Description</th>
+						<th>Map</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div>
+    </div>
+</div>
+	
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- lets load Leaflet's .js and .css from CDN-->
+
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+    integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+    crossorigin=""></script>  
+
+  <!-- Load Esri Leaflet from CDN.  it has no .css stylesheet of its own, only .js -->
+  <script src="https://unpkg.com/esri-leaflet@2.3.3/dist/esri-leaflet.js"
+    integrity="sha512-cMQ5e58BDuu1pr9BQ/eGRn6HaR6Olh0ofcHFWe5XesdCITVuSBiBZZbhCijBe5ya238f/zMMRYIMIIg1jxv4sQ=="
+    crossorigin=""></script>
+	
+	<!-- Load ESRI renderer to get styles set on AGOL-->
+  <!--<script src="https://unpkg.com/esri-leaflet-renderers@2.0.6"></script>-->
+  
+  <!-- datatables core JavaScript -->
+  <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.20/r-2.2.3/sp-1.0.1/sl-1.3.1/datatables.min.js"></script>
+  <script type="text/javascript" src="https:////cdn.datatables.net/plug-ins/1.10.20/dataRender/ellipsis.js"></script>
+  
+  <script>
+  
+	//MAP
+	
+	var map = L.map('map').setView([33.75, -81], 7);
+
+	L.esri.basemapLayer('Topographic').addTo(map);
+	
+	var eventData = "https://services.arcgis.com/acgZYxoN5Oj8pDLa/arcgis/rest/services/Winter_Weather_Climatology_Public/FeatureServer/1"
+	var stationData = "https://services.arcgis.com/acgZYxoN5Oj8pDLa/arcgis/rest/services/Winter_Weather_Climatology_Public/FeatureServer/0"
+	
+	var eventArea = L.esri.featureLayer({
+		url: eventData,
+		simplifyFactor: 1,
+		precision:3
+	});
+	
+	//will define three different styles for the points based on the radio button clicked
+	var stationPoints = L.esri.featureLayer({
+		url: stationData,
+		precision:4,
+		pane:'tooltipPane',
+		pointToLayer: function (geojson, latlng) {
+		  return L.circleMarker(latlng);
+		}
+	});
+
+	//use this to determine how point layers are currently displayed for switching between events
+	var currentMapPoints
+
+	var minTempColor = function(fieldValue){
+		if (fieldValue < 10) {
+			c = "#5A50A7"
+		} else if (fieldValue >= 10 && fieldValue < 20){
+			c = "#9A85DD"
+		} else if (fieldValue >= 20 && fieldValue < 32) {
+			c = "#BCADDA"
+		} else {
+			c = "#EEE8D6"
+		}
+		return c
+	}
+
+	var setMinTempStyle = function(){
+		stationPoints.setWhere("EventID = "+currentlyOnMap+"AND Lowest_Min_Temp IS NOT NULL")
+		stationPoints.setStyle(function(feature){
+			return {
+				weight: 1,
+				color:"#8400A8",
+				fillColor: minTempColor(feature.properties.Lowest_Min_Temp),
+				opacity: 0.8,
+				fillOpacity: 0.8,
+				radius:6
+			};
+		});
+		currentMapPoints = "Lowest_Min_Temp"
+	};
+
+	var circleSize = function(fieldValue){
+		if (fieldValue < 1) {
+			r = 3
+		} else if (fieldValue>=1 && fieldValue < 3){
+			r = 5
+		} else if (fieldValue >= 3 && fieldValue < 5) {
+			r = 9
+		} else if (fieldValue >=5 && fieldValue < 10) {
+			r = 13
+		} else {
+			r = 17
+		}
+		return r
+	}
+	
+	var setPrecipStyle = function(){
+		stationPoints.setWhere("EventID = "+currentlyOnMap+"AND Total_Precipitation IS NOT NULL")
+		stationPoints.setStyle(function(feature){
+			return {
+				weight: 2,
+				color: "#3ba8e3",
+				fillColor:"#3ba8e3",
+				opacity: 0.85,
+				fillOpacity: 0.5,
+				radius:circleSize(feature.properties.Total_Precipitation)
+			};
+		});
+		currentMapPoints = "Total_Precipitation"
+	}
+	
+	var setSnowfallStyle = function(){
+		stationPoints.setWhere("EventID = "+currentlyOnMap+"AND Total_Snowfall IS NOT NULL")
+		stationPoints.setStyle(function(feature){
+			return {
+				weight: 2,
+				color: '#e359c7',
+				fillColor: "#e359c7",
+				opacity: 0.85,
+				fillOpacity: 0.5,
+				radius:circleSize(feature.properties.Total_Snowfall)
+			};
+		});
+		currentMapPoints = "Total_Snowfall"
+	}
+  
+	//initial set map
+	setMinTempStyle();
+  
+	var parseParagraphs = function(p){
+		var newP = p.replace("|","</p><p>")
+		return newP
+	}
+  
+	//DATA AND EVENTS TABLE
+	
+	var tableData = []
+	
+	var rt
+
+	var makeResultTable = function(){
+		rt = $('#events-table').DataTable({
+			select:true,
+			paging:true,
+			data: tableData,
+			responsive:true,
+			autoWidth: true,
+			order: [4,"desc"],
+			columns:[
+				{data: 'Type',defaultContent:"", width:"15%",orderable:false},
+				{data: 'ImpactTime',defaultContent:"", width:"25%", orderData: 4},
+				{data: 'Description',defaultContent:"", width:"50%", render: $.fn.dataTable.render.ellipsis( 300, true ),orderable: false },
+				{data: "ImageURL",defaultContent:"",orderable: false},
+				{data: "EventID",searchable: false, visible: false},
+				{data: "Counties",searchable: true, visible: false, orderable: false}
+			],
+			rowId:'EventID',
+			pageLength:10
+		});
+	};
+
+	// remember which event id is being shown on map. only make a call to server if needed (prevents call to server if same row is clicked).
+	var currentlyOnMap
+
+	var mapQuery = L.esri.query({
+		url:eventData
+	});
+
+	var initialLoad = 0
+
+	var eventMapData = function(EventID){
+		
+		if (currentlyOnMap != EventID) {
+		
+			var exp1 = "EventID = "+EventID
+			eventArea.setWhere(exp1)
+			
+			var exp2 = "EventID = "+EventID+" AND "+currentMapPoints+" IS NOT NULL"
+			stationPoints.setWhere(exp2)
+			
+			if (initialLoad == 0) {
+				eventArea.addTo(map);
+				stationPoints.addTo(map);
+				initialLoad = 1
+			}
+			
+			currentlyOnMap = EventID
+			
+			mapQuery.where(exp1);
+    
+			mapQuery.run(function(error,fc,response){
+
+				$("#type").text(fc.features[0].properties.Precip_Type)
+				$("#dates").html(fc.features[0].properties.Start_Time + " to</br>"+ fc.features[0].properties.End_Time)
+				
+				$("#deaths").text(fc.features[0].properties.Deaths)
+				$("#injuries").text(fc.features[0].properties.Injuries)
+				$("#property-damage").text(fc.features[0].properties.Property_D)
+				$("#crop-damage").text(fc.features[0].properties.Crop_D)
+				
+				$("#description").html(parseParagraphs(fc.features[0].properties.Description_Final))
+			});
+
+		}
+	}
+	
+	// 	THIS SECTION GETS DATA FOR TABLE, INITIATES THE TABLE. 
+	
+	var eventQuery = L.esri.query({
+		url:eventData
+	});
+	
+	eventQuery.returnGeometry(false).orderBy("EventID","DESC");
+
+	eventQuery.run(function(error,fc,response){ 
+		
+		if (error) {
+			console.log(error);
+			return;
+		  }
+		
+		tableData = []
+		
+		for (var i = 0; i < fc.features.length; i++){
+			tableData.push({
+				"EventID":fc.features[i].properties.EventID,
+				"Type":fc.features[i].properties.Precip_Type,
+				"ImpactTime":fc.features[i].properties.Start_Time + "</br>"+ fc.features[i].properties.End_Time,
+				"Description":fc.features[i].properties.Description_Final,
+				"ImageURL":"<img class='thumb' src='"+fc.features[i].properties.imageURL+"' />",
+				"Counties":fc.features[i].properties.Counties
+			});
+		}
+		console.log(tableData)
+		makeResultTable();
+		eventMapData(rt.row(0).id());
+	});
+	
+	
+	//WHEN A ROW IS CLICKED IN THE TABLE, SHOW THE CORRECT DATA IN MAP, AND GET DATA IN SUMMARY by calling eventMapData
+	$("#events-table").on( 'click', 'td', function () {
+		
+		//pass EventID to map layers function
+		eventMapData(rt.row( this ).id());
+		
+		//switch back to map tab if the filter tab is active
+		$("#map-tab").tab('show');
+		
+		//scroll to map
+	    var $target = $("#main-tabs");
+	    $('html, body').animate({
+	        'scrollTop': $target.offset().top
+	    }, 900, 'swing', function () {
+	        window.location.hash = $target;
+	    });
+	});
+	
+	var filterType = function(eventTypeString){
+		console.log(eventTypeString)
+		rt
+        .columns( 0 )
+        .search(eventTypeString)
+        .draw();
+	};
+	
+	var filterCounty = function(countyString) {
+		console.log(countyString)
+		
+		rt
+		.columns(5)
+		.search(countyString)
+		.draw();
+	}
+	
+	var filterYears = function(yearListString){
+		console.log(yearListString);
+		rt
+		.columns(1)
+		.search(yearListString, true, false)
+		.draw();
+	}
+	
+	$("#event-type-group").on('change', function(){
+		var eventTypeSearchList = []
+		
+		$("#event-type-group input:checkbox").each(function(){
+			if ($(this).is(':checked')){
+				eventTypeSearchList.push($(this).val());
+			}
+		});
+		filterType(eventTypeSearchList.join(', '));
+	});
+	
+	$("#clear-type").on('click', function(){
+		$("#event-type-group input:checkbox").attr("checked", false);
+	});
+		
+	$("#countySelect").on('change', function(){
+		var countyName = $("#countySelect").children("option:selected").text();
+		if (countyName === 'All'){
+			filterCounty('');
+		} else {
+			filterCounty(countyName);
+		}
+	});
+	
+	$("#clear-county").on('click', function(){
+		$("#countySelect").val('All');
+		filterCounty('');
+	});
+	
+	$("#event-years").on('change', function(){
+		var startyear = parseInt($('#startyear').val())
+		var endyear = parseInt($('#endyear').val())
+		
+		var range = endyear - startyear
+		var years = Array.from(new Array(range), (x,i) => i + startyear)
+		var yearList = years.join('|')
+		filterYears(yearList);
+		
+	});
+	
+	$("#clear-year").on('click', function(){
+	//need to get these dates programmatically 
+		$("#startyear").val('1996')
+		$("#endyear").val('2020')
+		$("#event-years").change();
+	});
+	
+	//Label the points
+	/*
+	var labels = {};
+	
+	stationPoints.on('createfeature', function (e) {
+		var id = e.feature.id;
+		var feature = stationPoints.getFeature(id);
+		var center = feature.getLatLng();
+		var label = L.marker(center, {
+			  icon: L.divIcon({
+				iconSize: null,
+				className: 'label',
+				html: '<div>' + e.feature.properties.Lowest_Min_Temp + '</div>'
+			  })
+			}).addTo(map);
+			labels[id] = label;
+	});
+	
+	stationPoints.on('removefeature', function (e) {
+		var label = labels[e.feature.id];
+		console.log(e.feature.id+" removed: ", label)
+		if (label) {
+		  map.removeLayer(label);
+		}
+	});
+	
+	stationPoints.on('addfeature', function (e) {
+		var label = labels[e.feature.id];
+		console.log(e.feature.id+" added: ", label)
+		if (label) {
+		  label.addTo(map);
+		}
+	});
+	*/
+	//POPUPS FOR STATIONS
+	
+	stationPoints.bindPopup(function (layer) {
+		return L.Util.template('<p><span><b>{StationName}</b> ({StationType})</span><br> <span>Elevation: {Elevation}</span><br> <span>Lowest Min Temperature: {Lowest_Min_Temp}</span> <br><span>Total Snowfall: {Total_Snowfall}</span><br> <span>Total Precipitation: {Total_Precipitation}</span></p>', layer.feature.properties);
+	});
+		
+	$('input[type=radio][name=pointLayers]').on('change', function() {
+		if (this.value == "t") {
+			setMinTempStyle()
+		} else if (this.value == "p") {
+			setPrecipStyle()
+		} else if (this.value == "s"){
+			setSnowfallStyle()
+		}
+	});
+	/*
+	ISSUES
+
+	*/
+		
+  </script>
+
+</body>
+
+</html>
