@@ -105,6 +105,9 @@
     text-shadow: 0px 2px 1px rgba(255,255,255,0.85);
 	z-index:10000;
   }
+    #reporthtml {
+        font-size:1.1em;
+    }
 	
 </style>
 
@@ -124,6 +127,7 @@
               <span class="sr-only">(current)</span>
             </a>
           </li>
+          </ul>
       </div>
     </div>
   </nav>
@@ -185,6 +189,7 @@
 							<p id="crop-damage"></p>
 						</div>
 					</div>
+                    <p id="reporthtml"></p>
 					<h5>Event Description</h5>
 					<p id="description"></p>
 				</div>
@@ -538,6 +543,22 @@
 
 	var initialLoad = 0
 
+    var filterZero = function(fieldVal){
+        if (fieldVal == 0) {
+            return "n/a"
+        } else {
+            return fieldVal
+        }
+    }
+    
+    var reportLink = function(fieldVal){
+        if (fieldVal) {
+            return "<a href='"+fieldVal+"'>Additional Report</a>"
+        } else {
+            return ""
+        }
+    }
+    
 	var eventMapData = function(EventID){
 		
 		if (currentlyOnMap != EventID) {
@@ -563,10 +584,12 @@
 				$("#type").text(fc.features[0].properties.Precip_Type)
 				$("#dates").html(fc.features[0].properties.Start_Time + " to</br>"+ fc.features[0].properties.End_Time)
 				
-				$("#deaths").text(fc.features[0].properties.Deaths)
-				$("#injuries").text(fc.features[0].properties.Injuries)
-				$("#property-damage").text(fc.features[0].properties.Property_D)
-				$("#crop-damage").text(fc.features[0].properties.Crop_D)
+				$("#deaths").text(filterZero(fc.features[0].properties.Deaths))
+				$("#injuries").text(filterZero(fc.features[0].properties.Injuries))
+				$("#property-damage").text(filterZero(fc.features[0].properties.Property_D))
+				$("#crop-damage").text(filterZero(fc.features[0].properties.Crop_D))
+                
+                $("#reporthtml").html(reportLink(fc.features[0].properties.Additional_Link))
 				
 				$("#description").html(parseParagraphs(fc.features[0].properties.Description_Final))
 			});
